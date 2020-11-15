@@ -27,14 +27,14 @@ class TCC:
 
     def call_function(self, call_node):
         result = []
-        print(f'TCC: Call {call_node}')
+        print(f'TCC: call {call_node}')
         parameters_dict = call_node['parameters']
         function_name = call_node['call']
         for syn_node in self.syn_nodes:
             syn_node_type = syn_node['type']
             if syn_node_type == 'function':
                 if syn_node['name'] == function_name:
-                    print(f'TCC: Call function {syn_node}')
+                    print(f'TCC: call function {syn_node}')
                     # FIXME add parameters validation
                     steps_node = syn_node['function_steps']
                     steps_table = self.steps(steps_node, parameters_dict)
@@ -44,21 +44,24 @@ class TCC:
     def test_suite(self, suite_node):
         suite_name = suite_node['suite_name']
         self.suite_table = {'suite': suite_name,
+                            'extras': suite_node['extras'],
                             'test_cases': []}
         for test_case_node in suite_node['test_cases']:
             case_name = test_case_node['test_name']
-            print(f'TCC: Suite tcn {test_case_node}')
+            case_extras = test_case_node['extras']
+            print(f'TCC: suite tcn {test_case_node}')
             steps_node = test_case_node['test_steps']
             steps_table = self.steps(steps_node, {})
             self.suite_table['test_cases'].append({'test_case': case_name,
+                                                   'extras': case_extras,
                                                    'steps': steps_table})
-        print(f'TCC Suite: {self.suite_table}')
+        print(f'TCC suite: {self.suite_table}')
 
     def compile(self, filepath):
         syn = SyntaxAnalyzer.SyntaxAnalyzer(filepath)
         self.syn_nodes = syn.analyse()
         for node in self.syn_nodes:
-            print(f'TCC: {node}')
+            print(f'TCC: compile node {node}')
             node_type = node['type']
             if node_type == 'function':
                 continue
@@ -69,21 +72,25 @@ class TCC:
         os.makedirs(output_path, exist_ok=True)
         representation = []
         suite_name = self.suite_table['suite']
-        suite_path = os.path.join(output_path, f'{suite_name}.xlsx')
+        suite_path = os.path.join(output_path, f'{suite_name}.csv')
+        suite_extras = self.suite_table['extras']
         test_cases = self.suite_table['test_cases']
         for test_case in test_cases:
             test_case_name = test_case['test_case']
             is_first_step = True
             steps = test_case['steps']
+            extras = test_case['extras']
             for step in steps:
                 if is_first_step:
                     is_first_step = False
                     first_column = test_case_name
+                    last_columns = extras
                 else:
                     first_column = ''
-                representation.append((first_column, ) + step)
-        df = pd.DataFrame(representation, columns=['Test Case', 'Step', 'Expected Result'])
-        df.to_excel(suite_path, index=False)
+                    last_columns = []
+                representation.append([first_column] + list(step) + last_columns)
+        df = pd.DataFrame(representation, columns=['Test Case', 'Step', 'Expected Result'] + suite_extras, dtype=str)
+        df.to_csv(suite_path, index=False)
 
 
 if __name__ == '__main__':

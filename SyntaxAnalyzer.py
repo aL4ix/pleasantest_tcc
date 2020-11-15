@@ -40,8 +40,8 @@ class SyntaxAnalyzer:
         return tuple(row[1:3])
 
     def function(self, row):
-        first, second, _ = row
-        #print(f'SA: {row}')
+        # print(f'SA: {row}')
+        first, second = row[0:2]
         tree = {
             'type': first,
             'name': second,
@@ -50,7 +50,7 @@ class SyntaxAnalyzer:
         while not self.eof():
             first = self.peek()[0]
             if first == '':
-                # FIXME if parameters repeat it will overwrite them
+                # FIXME if parameters repeat they will get overwritten
                 tree['parameters'].update(self.to_dict(self.next()))
             elif first == 'steps':
                 tree['function_steps'] = self.steps(self.next())
@@ -59,7 +59,7 @@ class SyntaxAnalyzer:
         return tree
 
     def steps(self, row):
-        #print(f'SA: {row}')
+        # print(f'SA: {row}')
         tree = {
             'type': 'steps',
             'steps': []
@@ -76,7 +76,7 @@ class SyntaxAnalyzer:
         return tree
 
     def step(self, row):
-        #print(f'SA: {row}')
+        # print(f'SA: {row}')
         node = {
             'type': 'step',
             'step': self.to_tuple(row)
@@ -84,12 +84,14 @@ class SyntaxAnalyzer:
         return node
 
     def test_suite(self, row):
-        first, second, _ = row
-        #print(f'SA: {row}')
+        # print(f'SA: {row}')
+        first, second = row[0:2]
+        extras = row[2:]
         tree = {
             'type': first,
             'suite_name': second,
-            'test_cases': []
+            'test_cases': [],
+            'extras': extras
         }
         while not self.eof():
             first = self.peek()[0]
@@ -102,11 +104,13 @@ class SyntaxAnalyzer:
         return tree
 
     def test_case(self, row):
-        first, second, _ = row
-        #print(f'SA: {row}')
+        # print(f'SA: {row}')
+        first, second = row[0:2]
+        extras = row[2:]
         tree = {
             'type': first,
-            'test_name': second
+            'test_name': second,
+            'extras': extras
         }
         while not self.eof():
             first = self.peek()[0]
@@ -117,8 +121,8 @@ class SyntaxAnalyzer:
         return tree
 
     def call(self, row):
-        first, second, _ = row
-        #print(f'Start: {row}')
+        # print(f'Start: {row}')
+        first, second = row[0:2]
         tree = {
             'type': first,
             'call': second,
@@ -127,7 +131,7 @@ class SyntaxAnalyzer:
         while not self.eof():
             first = self.peek()[0]
             if first == '':
-                # FIXME if parameters repeat it will overwrite them
+                # FIXME if parameters repeat they will get overwritten
                 tree['parameters'].update(self.to_dict(self.next()))
             else:
                 break
@@ -150,7 +154,7 @@ class SyntaxAnalyzer:
             # noinspection PyArgumentList
             node = method_to_call(row)
             tree.append(node)
-            #print(f'SA TREE: {node}')
+            # print(f'SA TREE: {node}')
             if line_number == self.current_line:
                 raise RuntimeError(f'Syntax analyzer cycled infinitely at line {self.current_line} {row}')
         return tree
